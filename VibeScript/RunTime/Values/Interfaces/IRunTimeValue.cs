@@ -4,9 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VibeScript.FrontEnd.Ast
+namespace VibeScript.RunTime.Values.Interfaces
 {
-    public abstract class Expression : Statement
+    public interface IRunTimeValue
     {
+        ValueType Type { get; }
     }
 }

@@ -1,5 +1,8 @@
-﻿using VibeScript.FrontEnd;
+﻿using Newtonsoft.Json;
+using VibeScript.FrontEnd;
 using VibeScript.FrontEnd.Interfaces;
+using VibeScript.FrontEnd.Parser;
+using VibeScript.RunTime;
 
 namespace VibeScript
 {
@@ -7,26 +10,24 @@ namespace VibeScript
     {
         static void Main(string[] args)
         {
-
-
-            string filePath = "../../../ExampleSourceCode.txt";
-
-            try
+            var parser = new Parser();   
+            var interpreter = new Interpreter();
+            while (true)
             {
-                string sourceCode = File.ReadAllText(filePath);
-                Lexer lexer = new Lexer();
-                List<IToken> tokens = lexer.Tokenize(sourceCode);
-
-
-                foreach (var token in tokens)
+                string input = Console.ReadLine();
+                if (input == string.Empty || input == "exit")
                 {
-                    Console.WriteLine($"Value: {token.Value}, Type: {token.Type}");
+                    return;
                 }
+
+                var program = parser.ProduceAST(input);
+
+                var result = interpreter.Evaluate( program);
+
+                Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error reading file: " + ex.Message);
-            }
+
+           
         }
     }
 }

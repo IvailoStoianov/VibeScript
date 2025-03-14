@@ -8,14 +8,15 @@ using VibeScript.FrontEnd.Interfaces;
 
 namespace VibeScript.FrontEnd
 {
-    public class Lexer
+    public static class Lexer
     {
-        public List<IToken> Tokenize(string sourceCode) 
+        public static List<IToken> Tokenize(string sourceCode) 
         {
             //Mapping for reserved key words
             Dictionary<string , TokenType> keyWords = new Dictionary<string , TokenType>()
             {
                 { "bet", TokenType.Bet },
+                { "nah", TokenType.Null }
             };
 
             List<IToken> tokens = new List<IToken>();
@@ -36,7 +37,8 @@ namespace VibeScript.FrontEnd
                 else if (src.Peek() == '+' ||
                     src.Peek() == '-' ||
                     src.Peek() == '*' ||
-                    src.Peek() == '/')
+                    src.Peek() == '/' ||
+                    src.Peek() == '%')
                 {
                     tokens.Add(createToken(src.Dequeue().ToString(), TokenType.BinaryOperator));
                 }
@@ -67,18 +69,20 @@ namespace VibeScript.FrontEnd
                         {
                             ident.Append(src.Dequeue().ToString());
                         }
-
                         TokenType reserved;
-                        //Indentifier because its not in keywords
-                        if (!keyWords.TryGetValue(ident.ToString(), out reserved))
+                        // Check if the identifier exists in the keyword dictionary
+                        if (keyWords.TryGetValue(ident.ToString(), out reserved))
                         {
-                            tokens.Add(createToken(ident.ToString(), TokenType.Identifier));
+                            // If found, add it as a keyword token
+                            tokens.Add(createToken(ident.ToString(), reserved));
                         }
                         else
                         {
-                            tokens.Add(createToken(ident.ToString(), reserved));
+                            // If not found, treat it as an identifier
+                            tokens.Add(createToken(ident.ToString(), TokenType.Identifier));
                         }
-                            
+
+
                     }
                     else if (isSkippable(src.Peek().ToString()))
                     {
@@ -92,15 +96,16 @@ namespace VibeScript.FrontEnd
                 }
             }
 
+            tokens.Add(createToken("EndOfFile", TokenType.EOF));
             return tokens;
         }
-        private Token createToken(string value, TokenType type)
+        private static Token createToken(string value, TokenType type)
         {
             return new Token() { Value = value, Type = type };
         }
 
         //TODO: Could be improved
-        private bool isSkippable(string str)
+        private static bool isSkippable(string str)
         {
             return str == " " || str == "\n" || str == "\t";
         } 

@@ -6,11 +6,12 @@ using System.Threading.Tasks;
 
 namespace VibeScript.FrontEnd.Ast
 {
-    public static class NodeType
+    public enum NodeType
     {
-        public const string Program = "Program";
-        public const string NumericLiteral = "NumericLiteral";
-        public const string Identifier = "Identifier";
-        public const string BinaryExpr = "BinaryExpr";
+        Program,
+        NullLiteral,
+        NumericLiteral,
+        Identifier,
+        BinaryExpr
     }
 }

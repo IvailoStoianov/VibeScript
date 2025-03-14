@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VibeScript.FrontEnd.Ast
+namespace VibeScript.FrontEnd.Ast.Interfaces
 {
-    public abstract class Statement
+    public interface INode
     {
-        public abstract string Kind { get; }
+        NodeType Kind { get; }
     }
 }

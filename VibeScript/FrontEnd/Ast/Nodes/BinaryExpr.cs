@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VibeScript.FrontEnd.Ast
+namespace VibeScript.FrontEnd.Ast.Nodes
 {
     public class BinaryExpr : Expression
     {
@@ -14,7 +14,7 @@ namespace VibeScript.FrontEnd.Ast
             Operator = op;
             Right = right;
         }
-        public override string Kind => NodeType.BinaryExpr;
+        public override NodeType Kind => NodeType.BinaryExpr;
         public Expression Left { get; set; }
         public Expression Right { get; set; }
         public string Operator { get; set; }

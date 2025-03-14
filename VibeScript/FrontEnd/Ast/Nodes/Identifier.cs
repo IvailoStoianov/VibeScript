@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
-namespace VibeScript.FrontEnd.Ast
+namespace VibeScript.FrontEnd.Ast.Nodes
 {
     public class Identifier : Expression
     {
@@ -12,7 +13,8 @@ namespace VibeScript.FrontEnd.Ast
         {
             Symbol = symbol;
         }
-        public override string Kind => NodeType.Identifier;
-        public string Symbol {  get; set; }
+        public override NodeType Kind => NodeType.Identifier;
+        public string Symbol { get; set; }
+
     }
 }

@@ -8,12 +8,19 @@ namespace VibeScript.FrontEnd.Enums
 {
     public enum TokenType
     {
+        //Literal types
+        Null,
         Number,
         Identifier,
+
+        //Keywords
+        Bet,
+
+        //Grouping * Operators
         Equals,
         OpenParen,
         CloseParen,
         BinaryOperator,
-        Bet,
+        EOF, //Singified the end of a file
     }
 }

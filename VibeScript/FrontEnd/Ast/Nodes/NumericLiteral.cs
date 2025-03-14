@@ -4,15 +4,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VibeScript.FrontEnd.Ast
+namespace VibeScript.FrontEnd.Ast.Nodes
 {
     public class NumericLiteral : Expression
     {
-        public NumericLiteral(double value)
+        public NumericLiteral(float value)
         {
             Value = value;
         }
-        public override string Kind => NodeType.NumericLiteral;
-        public double Value { get; set; }
+        public override NodeType Kind => NodeType.NumericLiteral;
+        public float Value { get; set; }
     }
 }
