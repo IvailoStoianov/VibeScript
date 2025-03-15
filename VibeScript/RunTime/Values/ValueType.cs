@@ -9,6 +9,7 @@ namespace VibeScript.RunTime.Values
     public enum ValueType
     {
         Null,
-        Number
+        Number,
+        Boolean
     }
 }
