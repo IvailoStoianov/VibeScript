@@ -16,7 +16,6 @@ namespace VibeScript.FrontEnd
             Dictionary<string , TokenType> keyWords = new Dictionary<string , TokenType>()
             {
                 { "bet", TokenType.Bet },
-                { "nah", TokenType.Null }
             };
 
             List<IToken> tokens = new List<IToken>();

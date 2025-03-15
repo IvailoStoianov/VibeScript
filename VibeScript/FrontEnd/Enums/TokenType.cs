@@ -9,7 +9,6 @@ namespace VibeScript.FrontEnd.Enums
     public enum TokenType
     {
         //Literal types
-        Null,
         Number,
         Identifier,
 

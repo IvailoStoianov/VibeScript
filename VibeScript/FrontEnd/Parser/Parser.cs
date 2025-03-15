@@ -121,9 +121,6 @@ namespace VibeScript.FrontEnd.Parser
             {
                 case TokenType.Identifier:
                     return new Identifier(this.Next().Value);
-                case TokenType.Null:
-                    this.Next();
-                    return new NullLiteral();
                 case TokenType.Number:
                     return new NumericLiteral(float.Parse(this.Next().Value));
                 case TokenType.OpenParen:

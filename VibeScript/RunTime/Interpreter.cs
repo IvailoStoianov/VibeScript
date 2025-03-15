@@ -24,7 +24,6 @@ namespace VibeScript.RunTime
             {
                 NodeType.NumericLiteral => new NumberValue(((NumericLiteral)astNode).Value),
                 NodeType.Identifier => EvaluateIdentifier((Identifier)astNode, env),
-                NodeType.NullLiteral => new NullValue(),
                 NodeType.BinaryExpr => EvaluateBinaryExpr((BinaryExpr)astNode, env),
                 NodeType.Program => EvaluateProgram((ProgramNode)astNode, env),
                 _ => throw new NotImplementedException($"This AST Node has not yet been setup for interpretation: {astNode}")
