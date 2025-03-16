@@ -13,10 +13,12 @@ namespace VibeScript.FrontEnd
         public static List<IToken> Tokenize(string sourceCode) 
         {
             //Mapping for reserved key words
-            Dictionary<string , TokenType> keyWords = new Dictionary<string , TokenType>()
+            Dictionary<string, TokenType> keyWords = new Dictionary<string, TokenType>()
             {
-                { "bet", TokenType.Bet },
+                { ToLowerFirstLetter(TokenType.Bet.ToString()), TokenType.Bet },
+                { ToLowerFirstLetter(TokenType.LockedIn.ToString()), TokenType.LockedIn },
             };
+
 
             List<IToken> tokens = new List<IToken>();
             Queue<char> src = new Queue<char>(sourceCode);
@@ -28,7 +30,7 @@ namespace VibeScript.FrontEnd
                 if (src.Peek() == '(')
                 {
                     tokens.Add(createToken(src.Dequeue().ToString(), TokenType.OpenParen));
-                } 
+                }
                 else if (src.Peek() == ')')
                 {
                     tokens.Add(createToken(src.Dequeue().ToString(), TokenType.CloseParen));
@@ -44,6 +46,10 @@ namespace VibeScript.FrontEnd
                 else if (src.Peek() == '=')
                 {
                     tokens.Add(createToken(src.Dequeue().ToString(), TokenType.Equals));
+                }
+                else if (src.Peek() ==  ';')
+                {
+                    tokens.Add(createToken(src.Dequeue().ToString(), TokenType.Semicolon));
                 }
                 else
                 {
@@ -107,6 +113,7 @@ namespace VibeScript.FrontEnd
         private static bool isSkippable(string str)
         {
             return str == " " || str == "\n" || str == "\t";
-        } 
+        }
+        private static string ToLowerFirstLetter(string str) => char.ToLower(str[0]) + str.Substring(1);
     }
 }

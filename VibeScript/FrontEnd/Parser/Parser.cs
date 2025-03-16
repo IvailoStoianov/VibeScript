@@ -7,6 +7,8 @@ using VibeScript.FrontEnd.Interfaces;
 using VibeScript.FrontEnd;
 using VibeScript.FrontEnd.Enums;
 using VibeScript.FrontEnd.Ast.Nodes;
+using System.Runtime.CompilerServices;
+using Newtonsoft.Json;
 
 namespace VibeScript.FrontEnd.Parser
 {
@@ -40,8 +42,40 @@ namespace VibeScript.FrontEnd.Parser
         private Statement ParseStmt()
         {
             //Skip to parse expr
-            return this.ParseExpr();
+            switch(AtZero().Type)
+            {
+                case TokenType.Bet:
+                case TokenType.LockedIn:
+                    return this.ParseVarDeclaration();
+                default:
+                    return this.ParseExpr();
+            }
         }
+
+        private Statement ParseVarDeclaration()
+        {
+            bool isLockedIn = this.Next().Type == TokenType.LockedIn;
+            string identifierName = 
+                this.Expect(TokenType.Identifier, "Expected indentifier name following bet | lockedIn keywords.")
+                .Value;
+            if (this.AtZero().Type == TokenType.Semicolon) 
+            {
+                this.Next();
+                if (isLockedIn)
+                {
+                    throw new InvalidOperationException("Must assigne value to a lockedIn expression. No value provided.");
+                }
+
+                return new VarDeclaration() { IndentifierName = identifierName, IsLockedIn = isLockedIn};
+            }
+
+            this.Expect(TokenType.Equals, "Expected equals token following indentifier in var declaration.");
+            VarDeclaration declaration = new VarDeclaration() { Value = this.ParseExpr(), IsLockedIn = isLockedIn, IndentifierName = identifierName };
+
+            this.Expect(TokenType.Semicolon, "Statements must end with semicolon.");
+            return declaration;
+        }
+
         //More presicidence = further down the tree
         //Orders of prescidence
         //AdditiveExpr
@@ -129,7 +163,7 @@ namespace VibeScript.FrontEnd.Parser
                     this.Expect(TokenType.CloseParen, "No closing parenthesis found!"); //remove closing paren
                     return value;
                 default:
-                    throw new InvalidOperationException($"Unexpected token found during parsing! {this.AtZero()}");
+                    throw new InvalidOperationException($"Unexpected token found during parsing! {JsonConvert.SerializeObject(this.AtZero())}");
             }
         }
         private IToken Next()

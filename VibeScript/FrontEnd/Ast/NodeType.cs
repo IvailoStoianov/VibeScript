@@ -8,8 +8,11 @@ namespace VibeScript.FrontEnd.Ast
 {
     public enum NodeType
     {
+        //Statements
         Program,
-        NullLiteral,
+        VarDeclaration,
+
+        //Expressions
         NumericLiteral,
         Identifier,
         BinaryExpr

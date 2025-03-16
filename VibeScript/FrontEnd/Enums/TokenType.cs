@@ -14,9 +14,11 @@ namespace VibeScript.FrontEnd.Enums
 
         //Keywords
         Bet,
+        LockedIn,
 
         //Grouping * Operators
         Equals,
+        Semicolon,
         OpenParen,
         CloseParen,
         BinaryOperator,

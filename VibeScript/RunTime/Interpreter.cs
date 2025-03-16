@@ -4,6 +4,8 @@ using VibeScript.RunTime.Values;
 using VibeScript.RunTime.Values.Interfaces;
 using ValueType = VibeScript.RunTime.Values.ValueType;
 using VibeScript.RunTime.Environment;
+using Newtonsoft.Json;
+using System.Net.Http.Headers;
 
 namespace VibeScript.RunTime
 {
@@ -26,8 +28,15 @@ namespace VibeScript.RunTime
                 NodeType.Identifier => EvaluateIdentifier((Identifier)astNode, env),
                 NodeType.BinaryExpr => EvaluateBinaryExpr((BinaryExpr)astNode, env),
                 NodeType.Program => EvaluateProgram((ProgramNode)astNode, env),
-                _ => throw new NotImplementedException($"This AST Node has not yet been setup for interpretation: {astNode}")
+                NodeType.VarDeclaration => EvaluateVarDeclaration((VarDeclaration)astNode, env),
+                _ => throw new NotImplementedException($"This AST Node has not yet been setup for interpretation: {JsonConvert.SerializeObject(astNode, Formatting.Indented)}")
             };
+        }
+
+        private IRunTimeValue EvaluateVarDeclaration(VarDeclaration varDeclaration, RuntimeEnvironment env)
+        {
+            IRunTimeValue value = varDeclaration.Value != null ? Evaluate(varDeclaration.Value, env) : new NullValue();
+            return env.DeclareVar(varDeclaration.IndentifierName, value, varDeclaration.IsLockedIn);
         }
 
         private IRunTimeValue EvaluateIdentifier(Identifier ident, RuntimeEnvironment env)

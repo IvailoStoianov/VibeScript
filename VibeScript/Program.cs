@@ -14,10 +14,6 @@ namespace VibeScript
         {
             var parser = new Parser();   
             var env = new RuntimeEnvironment();
-            env.DeclareVar("x", new NumberValue(100.0f));
-            env.DeclareVar("true", new BooleanValue());
-            env.DeclareVar("false", new BooleanValue(false));
-            env.DeclareVar("nah", new NullValue());
             var interpreter = new Interpreter();
             while (true)
             {
