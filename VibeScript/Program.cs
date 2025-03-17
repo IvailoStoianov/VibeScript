@@ -15,6 +15,11 @@ namespace VibeScript
             var parser = new Parser();   
             var env = new RuntimeEnvironment();
             var interpreter = new Interpreter();
+
+            //Create Default Global Environment
+            env.DeclareVar("true", new BooleanValue(true), true);
+            env.DeclareVar("false", new BooleanValue(false), true);
+            env.DeclareVar("null", new NullValue(), true);
             while (true)
             {
                 string input = Console.ReadLine();

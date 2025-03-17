@@ -83,7 +83,20 @@ namespace VibeScript.FrontEnd.Parser
         //PrimaryExpr
         private Expression ParseExpr()
         {
-            return this.ParseAdditiveExpr();
+            return this.ParseAssignmentExpr();
+        }
+
+        private Expression ParseAssignmentExpr()
+        {
+            Expression left = this.ParseAdditiveExpr(); // switch to objects in the future
+
+            if(this.AtZero().Type == TokenType.Equals)
+            {
+                this.Next(); // Advance past equals
+                Expression value = this.ParseAssignmentExpr();
+                return new AssignmentExpr(left, value);
+            }
+            return left; 
         }
 
         /// <summary>

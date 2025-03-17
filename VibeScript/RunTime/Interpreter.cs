@@ -27,6 +27,7 @@ namespace VibeScript.RunTime
                 NodeType.NumericLiteral => new NumberValue(((NumericLiteral)astNode).Value),
                 NodeType.Identifier => EvaluateIdentifier((Identifier)astNode, env),
                 NodeType.BinaryExpr => EvaluateBinaryExpr((BinaryExpr)astNode, env),
+                NodeType.AssignmentExpr => EvaluateAssignmentExpr((AssignmentExpr)astNode, env),
                 NodeType.Program => EvaluateProgram((ProgramNode)astNode, env),
                 NodeType.VarDeclaration => EvaluateVarDeclaration((VarDeclaration)astNode, env),
                 _ => throw new NotImplementedException($"This AST Node has not yet been setup for interpretation: {JsonConvert.SerializeObject(astNode, Formatting.Indented)}")
@@ -92,5 +93,16 @@ namespace VibeScript.RunTime
 
             return lastEvaluated;
         }
+
+        private IRunTimeValue EvaluateAssignmentExpr(AssignmentExpr node, RuntimeEnvironment env) 
+        {
+            if(node.Assigne.Kind != NodeType.Identifier)
+            {
+                throw new InvalidOperationException($"Invalid LHS inside assigment expression {JsonConvert.SerializeObject(node, Formatting.Indented)}");
+            }
+            string varName = ((Identifier)node.Assigne).Symbol;
+            return env.AssignVar(varName, Evaluate(node.Value, env));
+        }
+
     }
 }

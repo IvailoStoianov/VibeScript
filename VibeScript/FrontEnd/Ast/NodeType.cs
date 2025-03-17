@@ -13,6 +13,7 @@ namespace VibeScript.FrontEnd.Ast
         VarDeclaration,
 
         //Expressions
+        AssignmentExpr,
         NumericLiteral,
         Identifier,
         BinaryExpr
