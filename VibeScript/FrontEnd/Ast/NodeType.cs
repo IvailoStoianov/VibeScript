@@ -14,6 +14,10 @@ namespace VibeScript.FrontEnd.Ast
 
         //Expressions
         AssignmentExpr,
+
+        //Literals
+        ObjectLiteral,
+        Property,
         NumericLiteral,
         Identifier,
         BinaryExpr

@@ -35,6 +35,14 @@ namespace VibeScript.FrontEnd
                 {
                     tokens.Add(createToken(src.Dequeue().ToString(), TokenType.CloseParen));
                 }
+                else if (src.Peek() == '{')
+                {
+                    tokens.Add(createToken(src.Dequeue().ToString(), TokenType.OpenBrace));
+                }
+                else if (src.Peek() == '}')
+                {
+                    tokens.Add(createToken(src.Dequeue().ToString(), TokenType.CloseBrace));
+                }
                 else if (src.Peek() == '+' ||
                     src.Peek() == '-' ||
                     src.Peek() == '*' ||
@@ -50,6 +58,14 @@ namespace VibeScript.FrontEnd
                 else if (src.Peek() ==  ';')
                 {
                     tokens.Add(createToken(src.Dequeue().ToString(), TokenType.Semicolon));
+                }
+                else if (src.Peek() == ':')
+                {
+                    tokens.Add(createToken(src.Dequeue().ToString(), TokenType.Colon));
+                }
+                else if (src.Peek() == ',')
+                {
+                    tokens.Add(createToken(src.Dequeue().ToString(), TokenType.Comma));
                 }
                 else
                 {
@@ -112,7 +128,7 @@ namespace VibeScript.FrontEnd
         //TODO: Could be improved
         private static bool isSkippable(string str)
         {
-            return str == " " || str == "\n" || str == "\t";
+            return str == " " || str == "\n" || str == "\t" || str == "\r";
         }
         private static string ToLowerFirstLetter(string str) => char.ToLower(str[0]) + str.Substring(1);
     }

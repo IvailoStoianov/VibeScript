@@ -88,7 +88,7 @@ namespace VibeScript.FrontEnd.Parser
 
         private Expression ParseAssignmentExpr()
         {
-            Expression left = this.ParseAdditiveExpr(); // switch to objects in the future
+            Expression left = this.ParseObjectExpr(); 
 
             if(this.AtZero().Type == TokenType.Equals)
             {
@@ -97,6 +97,53 @@ namespace VibeScript.FrontEnd.Parser
                 return new AssignmentExpr(left, value);
             }
             return left; 
+        }
+
+        private Expression ParseObjectExpr()
+        {
+            if(this.AtZero().Type != TokenType.OpenBrace)
+            {
+                return ParseAdditiveExpr();
+            }
+
+            this.Next(); 
+
+            List<Property> properties = new List<Property>();
+
+            while (this.NotEOF() && this.AtZero().Type != TokenType.CloseBrace)
+            {
+                string key = this.Expect(TokenType.Identifier, "Object literal key expected.").Value;
+
+                //Allows shorthand key: pair -> { key, }
+                if(this.AtZero().Type == TokenType.Comma)
+                {
+                    this.Next(); //advance past coma 
+                    properties.Add(new Property(key));
+                    continue;
+                } 
+                //Allows shorthand key: pair -> { key }
+                else if (this.AtZero().Type == TokenType.CloseBrace)
+                {
+                    properties.Add(new Property(key));
+                    continue;
+                }
+
+                //Support for { key: val }
+                this.Expect(TokenType.Colon, "Missing colon following indentifier in object expression.");
+
+                Expression value = this.ParseExpr();
+
+                properties.Add(new Property(key, value));
+
+                if(this.AtZero().Type != TokenType.CloseBrace)
+                {
+                    this.Expect(TokenType.Comma, "Expected comma or closing bracket following property.");
+                }
+            }
+
+            this.Expect(TokenType.CloseBrace, "Object literal missing closing brace.");
+
+            return new ObjectLiteral(properties);
         }
 
         /// <summary>

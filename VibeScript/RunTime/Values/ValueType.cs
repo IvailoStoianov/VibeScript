@@ -10,6 +10,7 @@ namespace VibeScript.RunTime.Values
     {
         Null,
         Number,
-        Boolean
+        Boolean,
+        Object
     }
 }

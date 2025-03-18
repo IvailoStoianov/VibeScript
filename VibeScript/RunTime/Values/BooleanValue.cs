@@ -7,14 +7,14 @@ using VibeScript.RunTime.Values.Interfaces;
 
 namespace VibeScript.RunTime.Values
 {
-    public class BooleanValue : IRunTimeValue
+    public class BooleanValue : RunTimeValue
     {
         //Default to true
         public BooleanValue(bool value = true) 
         {
             Value = value;
         }
-        public ValueType Type => ValueType.Boolean;
+        public override ValueType Type => ValueType.Boolean;
         public bool Value { get; set; }
     }
 }

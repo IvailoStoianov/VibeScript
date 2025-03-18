@@ -60,5 +60,6 @@ namespace VibeScript.RunTime.Environment
             return this._parent.Resolve(varName);
         }
 
+        
     }   
 }

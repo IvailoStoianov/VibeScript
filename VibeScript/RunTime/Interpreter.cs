@@ -26,6 +26,7 @@ namespace VibeScript.RunTime
             {
                 NodeType.NumericLiteral => new NumberValue(((NumericLiteral)astNode).Value),
                 NodeType.Identifier => EvaluateIdentifier((Identifier)astNode, env),
+                NodeType.ObjectLiteral => EvaluateObjectExpr((ObjectLiteral)astNode, env),
                 NodeType.BinaryExpr => EvaluateBinaryExpr((BinaryExpr)astNode, env),
                 NodeType.AssignmentExpr => EvaluateAssignmentExpr((AssignmentExpr)astNode, env),
                 NodeType.Program => EvaluateProgram((ProgramNode)astNode, env),
@@ -102,6 +103,18 @@ namespace VibeScript.RunTime
             }
             string varName = ((Identifier)node.Assigne).Symbol;
             return env.AssignVar(varName, Evaluate(node.Value, env));
+        }
+
+        private IRunTimeValue EvaluateObjectExpr(ObjectLiteral obj, RuntimeEnvironment env)
+        {
+            ObjectValue crrObject = new ObjectValue( new Dictionary<string, IRunTimeValue>());
+            foreach (Property prop in obj.Properties) 
+            {
+                // { foo: foo }
+                IRunTimeValue runtimeVal = prop.Value == null ? env.LookUpVar(prop.Key) : Evaluate(prop.Value, env);
+                crrObject.Properties.Add(prop.Key, runtimeVal);
+            }
+            return crrObject;
         }
 
     }
