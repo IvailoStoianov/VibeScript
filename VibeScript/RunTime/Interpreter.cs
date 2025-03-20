@@ -6,6 +6,7 @@ using ValueType = VibeScript.RunTime.Values.ValueType;
 using VibeScript.RunTime.Environment;
 using Newtonsoft.Json;
 using System.Net.Http.Headers;
+using Newtonsoft.Json.Converters;
 
 namespace VibeScript.RunTime
 {
@@ -22,6 +23,12 @@ namespace VibeScript.RunTime
         /// <exception cref="NotImplementedException">Thrown if the node type is not supported.</exception>
         public IRunTimeValue Evaluate(Statement astNode, RuntimeEnvironment env)
         {
+            JsonSerializerSettings settings = new JsonSerializerSettings
+            {
+                Formatting = Formatting.Indented,
+                Converters = new List<JsonConverter> { new StringEnumConverter() }
+            };
+
             return astNode.Kind switch
             {
                 NodeType.NumericLiteral => new NumberValue(((NumericLiteral)astNode).Value),
@@ -31,7 +38,7 @@ namespace VibeScript.RunTime
                 NodeType.AssignmentExpr => EvaluateAssignmentExpr((AssignmentExpr)astNode, env),
                 NodeType.Program => EvaluateProgram((ProgramNode)astNode, env),
                 NodeType.VarDeclaration => EvaluateVarDeclaration((VarDeclaration)astNode, env),
-                _ => throw new NotImplementedException($"This AST Node has not yet been setup for interpretation: {JsonConvert.SerializeObject(astNode, Formatting.Indented)}")
+                _ => throw new NotImplementedException($"This AST Node has not yet been setup for interpretation: {JsonConvert.SerializeObject(astNode, settings)}")
             };
         }
 

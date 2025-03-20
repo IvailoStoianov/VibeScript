@@ -9,6 +9,7 @@ using VibeScript.FrontEnd.Enums;
 using VibeScript.FrontEnd.Ast.Nodes;
 using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
+using VibeScript.FrontEnd.Ast;
 
 namespace VibeScript.FrontEnd.Parser
 {
@@ -16,13 +17,13 @@ namespace VibeScript.FrontEnd.Parser
     {
         private List<IToken> _tokens = new List<IToken>();
 
-        public ProgramNode ProduceAST (string sourceCode)
+        public ProgramNode ProduceAST(string sourceCode)
         {
             this._tokens = Lexer.Tokenize(sourceCode);
             ProgramNode program = new ProgramNode();
 
             //Parse until end of file
-            while(this.NotEOF())
+            while (this.NotEOF())
             {
                 program.Body.Add(this.ParseStmt());
             }
@@ -42,7 +43,7 @@ namespace VibeScript.FrontEnd.Parser
         private Statement ParseStmt()
         {
             //Skip to parse expr
-            switch(AtZero().Type)
+            switch (AtZero().Type)
             {
                 case TokenType.Bet:
                 case TokenType.LockedIn:
@@ -55,10 +56,10 @@ namespace VibeScript.FrontEnd.Parser
         private Statement ParseVarDeclaration()
         {
             bool isLockedIn = this.Next().Type == TokenType.LockedIn;
-            string identifierName = 
+            string identifierName =
                 this.Expect(TokenType.Identifier, "Expected indentifier name following bet | lockedIn keywords.")
                 .Value;
-            if (this.AtZero().Type == TokenType.Semicolon) 
+            if (this.AtZero().Type == TokenType.Semicolon)
             {
                 this.Next();
                 if (isLockedIn)
@@ -66,7 +67,7 @@ namespace VibeScript.FrontEnd.Parser
                     throw new InvalidOperationException("Must assigne value to a lockedIn expression. No value provided.");
                 }
 
-                return new VarDeclaration() { IndentifierName = identifierName, IsLockedIn = isLockedIn};
+                return new VarDeclaration() { IndentifierName = identifierName, IsLockedIn = isLockedIn };
             }
 
             this.Expect(TokenType.Equals, "Expected equals token following indentifier in var declaration.");
@@ -78,8 +79,12 @@ namespace VibeScript.FrontEnd.Parser
 
         //More presicidence = further down the tree
         //Orders of prescidence
+        //Assigment
+        //Object
         //AdditiveExpr
         //MultiplicativeExpr
+        //Call
+        //Member
         //PrimaryExpr
         private Expression ParseExpr()
         {
@@ -88,25 +93,25 @@ namespace VibeScript.FrontEnd.Parser
 
         private Expression ParseAssignmentExpr()
         {
-            Expression left = this.ParseObjectExpr(); 
+            Expression left = this.ParseObjectExpr();
 
-            if(this.AtZero().Type == TokenType.Equals)
+            if (this.AtZero().Type == TokenType.Equals)
             {
                 this.Next(); // Advance past equals
                 Expression value = this.ParseAssignmentExpr();
                 return new AssignmentExpr(left, value);
             }
-            return left; 
+            return left;
         }
 
         private Expression ParseObjectExpr()
         {
-            if(this.AtZero().Type != TokenType.OpenBrace)
+            if (this.AtZero().Type != TokenType.OpenBrace)
             {
                 return ParseAdditiveExpr();
             }
 
-            this.Next(); 
+            this.Next();
 
             List<Property> properties = new List<Property>();
 
@@ -115,12 +120,12 @@ namespace VibeScript.FrontEnd.Parser
                 string key = this.Expect(TokenType.Identifier, "Object literal key expected.").Value;
 
                 //Allows shorthand key: pair -> { key, }
-                if(this.AtZero().Type == TokenType.Comma)
+                if (this.AtZero().Type == TokenType.Comma)
                 {
                     this.Next(); //advance past coma 
                     properties.Add(new Property(key));
                     continue;
-                } 
+                }
                 //Allows shorthand key: pair -> { key }
                 else if (this.AtZero().Type == TokenType.CloseBrace)
                 {
@@ -135,7 +140,7 @@ namespace VibeScript.FrontEnd.Parser
 
                 properties.Add(new Property(key, value));
 
-                if(this.AtZero().Type != TokenType.CloseBrace)
+                if (this.AtZero().Type != TokenType.CloseBrace)
                 {
                     this.Expect(TokenType.Comma, "Expected comma or closing bracket following property.");
                 }
@@ -191,14 +196,14 @@ namespace VibeScript.FrontEnd.Parser
 
         private Expression ParseMultiplicativeExpr()
         {
-            Expression left = this.ParsePrimaryExpr();
+            Expression left = this.ParseCallMemberExpr();
 
             while (this.AtZero().Value == "/"
                 || this.AtZero().Value == "*"
                 || this.AtZero().Value == "%")
             {
                 string operatorValue = this.Next().Value;
-                Expression right = this.ParsePrimaryExpr();
+                Expression right = this.ParseCallMemberExpr();
 
                 BinaryExpr binop = new BinaryExpr(left, operatorValue, right);
                 left = binop;
@@ -206,6 +211,83 @@ namespace VibeScript.FrontEnd.Parser
 
             return left;
         }
+        //foo.x()()
+        private Expression ParseCallMemberExpr()
+        {
+            Expression member = this.ParseMemberExpr();
+
+            if (this.AtZero().Type == TokenType.OpenParen)
+            {
+                return this.ParseCallExpr(member);
+            }
+
+            return member;
+        }
+        //Allows channing of function calls 
+        private Expression ParseCallExpr(Expression caller)
+        {
+            Expression callExpr = new CallExpr(caller, this.ParseArgs());
+
+            if (this.AtZero().Type == TokenType.OpenParen)
+            {
+                callExpr = this.ParseCallExpr(callExpr);
+            }
+            return callExpr;
+        }
+        private List<Expression> ParseArgs()
+        {
+            this.Expect(TokenType.OpenParen, "Expected open parenthesis.");
+            List<Expression> args =
+                this.AtZero().Type == TokenType.CloseParen
+                ? new()
+                : this.ParseArgsList();
+            this.Expect(TokenType.CloseParen, "Missing closing parenthesis inside arguments list.");
+            return args;
+        }
+        //foo(x = 5, y = 2);
+        private List<Expression> ParseArgsList()
+        {
+            List<Expression> args = new List<Expression>();
+            args.Add(ParseAssignmentExpr());
+            while (this.AtZero().Type == TokenType.Comma && this.Next() != null)
+            {
+                args.Add(ParseAssignmentExpr());
+            }
+            return args;
+        }
+        private Expression ParseMemberExpr()
+        {
+            Expression obj = this.ParsePrimaryExpr();
+            while (this.AtZero().Type == TokenType.Dot || this.AtZero().Type == TokenType.OpenBracket)
+            {
+                IToken crrOperator = this.Next();
+                Expression property;
+                bool isComputed;
+
+                //non-computed values (obj.expr)
+                if (crrOperator.Type == TokenType.Dot)
+                {
+                    //get identifier
+                    property = this.ParsePrimaryExpr();
+                    isComputed = false;
+
+                    if (property.Kind != NodeType.Identifier)
+                    {
+                        throw new InvalidOperationException("Cannot use dot operator without the inside being an identifier.");
+                    }
+                }
+                else //this allows obj[computedValue]
+                {
+                    isComputed = true;
+                    property = this.ParsePrimaryExpr();
+                    this.Expect(TokenType.CloseBracket, "Missing closing bracket in computed value.");
+                }
+                obj = new MemberExpr(obj, property, isComputed);
+            }
+            return obj;
+           
+        }
+
         //TODO: Update the error for closing paren 
         private Expression ParsePrimaryExpr()
         {

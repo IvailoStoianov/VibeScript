@@ -43,6 +43,14 @@ namespace VibeScript.FrontEnd
                 {
                     tokens.Add(createToken(src.Dequeue().ToString(), TokenType.CloseBrace));
                 }
+                else if (src.Peek() == '[')
+                {
+                    tokens.Add(createToken(src.Dequeue().ToString(), TokenType.OpenBracket));
+                }
+                else if (src.Peek() == ']')
+                {
+                    tokens.Add(createToken(src.Dequeue().ToString(), TokenType.CloseBracket));
+                }
                 else if (src.Peek() == '+' ||
                     src.Peek() == '-' ||
                     src.Peek() == '*' ||
@@ -66,6 +74,10 @@ namespace VibeScript.FrontEnd
                 else if (src.Peek() == ',')
                 {
                     tokens.Add(createToken(src.Dequeue().ToString(), TokenType.Comma));
+                }
+                else if (src.Peek() == '.')
+                {
+                    tokens.Add(createToken(src.Dequeue().ToString(), TokenType.Dot));
                 }
                 else
                 {

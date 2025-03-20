@@ -18,13 +18,16 @@ namespace VibeScript.FrontEnd.Enums
 
         //Grouping * Operators
         Equals,
+        Dot,
         Comma,
         Colon,
         Semicolon,
-        OpenParen,
-        CloseParen,
-        OpenBrace,
-        CloseBrace,
+        OpenParen, // (
+        CloseParen, // )
+        OpenBrace, // {
+        CloseBrace, // }
+        OpenBracket, // [
+        CloseBracket, // ]
         BinaryOperator,
         EOF, //Singified the end of a file
     }

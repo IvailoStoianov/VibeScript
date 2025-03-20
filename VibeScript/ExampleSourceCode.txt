@@ -8,3 +8,5 @@ lockedIn obj = {
     bar: true,
   },
 };
+
+foo = obj.foo()() + 5
