@@ -1,5 +1,6 @@
 ﻿using VibeScript.RunTime.Values;
 using VibeScript.RunTime.Values.Interfaces;
+using ValueType = VibeScript.RunTime.Values.ValueType;
 
 namespace VibeScript.RunTime.Environment
 {
@@ -60,6 +61,51 @@ namespace VibeScript.RunTime.Environment
             return this._parent.Resolve(varName);
         }
 
-        
+        public RuntimeEnvironment CreateGlobalEnv()
+        {
+            RuntimeEnvironment env = new RuntimeEnvironment();
+
+            env.DeclareVar("true", new BooleanValue(true), true);
+            env.DeclareVar("false", new BooleanValue(false), true);
+            env.DeclareVar("nah", new NullValue(), true);
+
+            // Define a native builtin method
+            env.DeclareVar("vibe", new NativeFuncValue((args, scope) =>
+            {
+                //TODO: Make this a saperate function and make it better
+                if (args == null || args.Count() == 0)
+                {
+                    // If no arguments, print an empty line
+                    Console.WriteLine();
+                    return new NullValue();
+                }
+
+                // Otherwise, iterate through the arguments and print them
+                Console.WriteLine(string.Join(" ", args.Select(a => FormatArgument(a))));
+
+                return new NullValue();
+            }), true);
+
+            return env;
+        }
+
+        private static string FormatArgument(IRunTimeValue arg)
+        {
+            switch (arg.Type)
+            {
+                case ValueType.Null:
+                    return "null";
+                case ValueType.Number:
+                    return ((NumberValue)arg).Value.ToString();
+                case ValueType.Boolean:
+                    return ((BooleanValue)arg).Value ? "true" : "false";
+                case ValueType.Object:
+                    return arg.ToString();  // Customize this if necessary, to show more meaningful object info
+                case ValueType.NativeFunc:
+                    return "[Native Function]"; // You can customize this to print function details
+                default:
+                    return "Unknown";
+            }
+        }
     }   
 }

@@ -7,6 +7,7 @@ using VibeScript.RunTime.Environment;
 using Newtonsoft.Json;
 using System.Net.Http.Headers;
 using Newtonsoft.Json.Converters;
+using System.Text.Json;
 
 namespace VibeScript.RunTime
 {
@@ -34,6 +35,7 @@ namespace VibeScript.RunTime
                 NodeType.NumericLiteral => new NumberValue(((NumericLiteral)astNode).Value),
                 NodeType.Identifier => EvaluateIdentifier((Identifier)astNode, env),
                 NodeType.ObjectLiteral => EvaluateObjectExpr((ObjectLiteral)astNode, env),
+                NodeType.CallExpr => EvaluateCallExpr((CallExpr)astNode, env),
                 NodeType.BinaryExpr => EvaluateBinaryExpr((BinaryExpr)astNode, env),
                 NodeType.AssignmentExpr => EvaluateAssignmentExpr((AssignmentExpr)astNode, env),
                 NodeType.Program => EvaluateProgram((ProgramNode)astNode, env),
@@ -123,6 +125,27 @@ namespace VibeScript.RunTime
             }
             return crrObject;
         }
+        private IRunTimeValue EvaluateCallExpr(CallExpr expr, RuntimeEnvironment env)
+        {
+            // Evaluate the arguments and convert the list to a RunTimeValue array
+            RunTimeValue[] args = expr.Arguments
+                                    .Select(arg => (RunTimeValue)Evaluate(arg, env)) // Cast each evaluated result to RunTimeValue
+                                    .ToArray();
 
+            // Evaluate the caller (function) of the expression
+            IRunTimeValue fn = Evaluate(expr.Caller, env);
+
+            // Check if the function is of type 'NativeFunc'
+            if (fn is NativeFuncValue nativeFn)
+            {
+                // Call the native function with the evaluated arguments
+                return nativeFn.Call(args, env);
+            }
+            else
+            {
+                // If it's not a native function, throw an exception
+                throw new InvalidOperationException($"Cannot call a value that's not a function: {JsonConvert.SerializeObject(fn, Formatting.Indented)}.");
+            }
+        }
     }
 }

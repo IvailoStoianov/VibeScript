@@ -9,4 +9,5 @@ lockedIn obj = {
   },
 };
 
-foo = obj.foo()() + 5
+
+vibe(50+1, foo+1)

@@ -21,10 +21,7 @@ namespace VibeScript
             var interpreter = new Interpreter();
 
             //Create Default Global Environment
-            //TODO: Find a better place to put this
-            env.DeclareVar("true", new BooleanValue(true), true);
-            env.DeclareVar("false", new BooleanValue(false), true);
-            env.DeclareVar("nah", new NullValue(), true);
+            env = env.CreateGlobalEnv();
 
             var program = parser.ProduceAST(content);
 
@@ -36,7 +33,7 @@ namespace VibeScript
                 Converters = new List<JsonConverter> { new StringEnumConverter() }
             };
 
-            Console.WriteLine(JsonConvert.SerializeObject(result, settings));
+            //Console.WriteLine(JsonConvert.SerializeObject(result, settings));
 
             //while (true)
             //{

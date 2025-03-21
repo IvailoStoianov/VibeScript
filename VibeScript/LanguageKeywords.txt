@@ -1,2 +1,3 @@
 ﻿let -> bet
 null -> nah
+console.log() -> vibe()

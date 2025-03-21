@@ -11,6 +11,7 @@ namespace VibeScript.RunTime.Values
         Null,
         Number,
         Boolean,
-        Object
+        Object,
+        NativeFunc
     }
 }
