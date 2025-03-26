@@ -48,9 +48,38 @@ namespace VibeScript.FrontEnd.Parser
                 case TokenType.Bet:
                 case TokenType.LockedIn:
                     return this.ParseVarDeclaration();
+                case TokenType.Cook:
+                    return this.ParseFnDeclaration();
                 default:
                     return this.ParseExpr();
             }
+        }
+
+        private Statement ParseFnDeclaration()
+        {
+            this.Next();
+            string name = this.Expect(TokenType.Identifier, "Expected function name following cook keyword.").Value;
+            List<Expression> args = this.ParseArgs();
+
+            if (args.Any(arg => arg.Kind != NodeType.Identifier))
+            {
+                throw new InvalidOperationException("All function parameters must be identifiers.");
+            }
+
+            List<string> parameters = args
+                .Select(arg => ((Identifier)arg).Symbol)
+                .ToList();
+            this.Expect(TokenType.OpenBrace, "Expected function body following declaration.");
+
+            List<Statement> body = new();
+            while (this.AtZero().Type != TokenType.EOF
+                && this.AtZero().Type != TokenType.CloseBrace)
+            {
+                body.Add(this.ParseStmt());
+            }
+            this.Expect(TokenType.CloseBrace, "Closing brace expected inside function declaration.");
+
+            return new FunctionDeclaration(parameters,name,body);
         }
 
         private Statement ParseVarDeclaration()

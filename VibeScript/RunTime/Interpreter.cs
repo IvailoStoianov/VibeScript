@@ -40,8 +40,16 @@ namespace VibeScript.RunTime
                 NodeType.AssignmentExpr => EvaluateAssignmentExpr((AssignmentExpr)astNode, env),
                 NodeType.Program => EvaluateProgram((ProgramNode)astNode, env),
                 NodeType.VarDeclaration => EvaluateVarDeclaration((VarDeclaration)astNode, env),
+                NodeType.FunctionDeclaration => EvaluateFunctionDeclaration((FunctionDeclaration)astNode, env),
                 _ => throw new NotImplementedException($"This AST Node has not yet been setup for interpretation: {JsonConvert.SerializeObject(astNode, settings)}")
             };
+        }
+
+        private IRunTimeValue EvaluateFunctionDeclaration(FunctionDeclaration functionDeclaration, RuntimeEnvironment env)
+        {
+            FuncValue fn = new FuncValue(functionDeclaration.Name,functionDeclaration.Parameters,env,functionDeclaration.Body);
+
+            return env.DeclareVar(functionDeclaration.Name, fn, true);
         }
 
         private IRunTimeValue EvaluateVarDeclaration(VarDeclaration varDeclaration, RuntimeEnvironment env)
@@ -141,9 +149,30 @@ namespace VibeScript.RunTime
                 // Call the native function with the evaluated arguments
                 return nativeFn.Call(args, env);
             }
+            else if(fn is FuncValue func)
+            {
+                RuntimeEnvironment scope = new RuntimeEnvironment(func.Environment);
+
+                for (int i = 0; i < func.Parameters.Count; i++)
+                {
+                    //TODO: Check the bounds here.
+                    //Verify arity of function
+                    string varName = func.Parameters[i];
+                    scope.DeclareVar(varName,args[i], false);
+                }
+                IRunTimeValue result = new NullValue();
+                //Evaluate the function body line by line
+                foreach (Statement stmt in func.Body) 
+                {
+                    result = Evaluate(stmt, scope);
+                }
+                //this makes it so the function will return the last evaluated statement
+                return result;
+
+            }
             else
             {
-                // If it's not a native function, throw an exception
+                // If it's not a function, throw an exception
                 throw new InvalidOperationException($"Cannot call a value that's not a function: {JsonConvert.SerializeObject(fn, Formatting.Indented)}.");
             }
         }

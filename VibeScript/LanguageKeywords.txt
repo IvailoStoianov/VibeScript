@@ -1,3 +1,4 @@
 ﻿let -> bet
 null -> nah
 console.log() -> vibe()
+fuction -> cook (function will return the last evaluated statement. There is no return keyword)

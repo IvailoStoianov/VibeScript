@@ -11,6 +11,7 @@ namespace VibeScript.FrontEnd.Ast
         //Statements
         Program,
         VarDeclaration,
+        FunctionDeclaration,
 
         //Expressions
         AssignmentExpr,

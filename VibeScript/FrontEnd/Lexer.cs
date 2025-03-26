@@ -17,6 +17,7 @@ namespace VibeScript.FrontEnd
             {
                 { ToLowerFirstLetter(TokenType.Bet.ToString()), TokenType.Bet },
                 { ToLowerFirstLetter(TokenType.LockedIn.ToString()), TokenType.LockedIn },
+                { ToLowerFirstLetter(TokenType.Cook.ToString()), TokenType.Cook },
             };
 
 

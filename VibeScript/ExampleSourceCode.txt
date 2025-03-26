@@ -1,13 +1,10 @@
-﻿bet foo = 50 / 2;
+﻿
 
-lockedIn obj = {
-  x: 100,
-  y: 32,
-  foo: foo,
-  complex: {
-    bar: true,
-  },
-};
+cook add (x, y)  {
+    bet result = x + y;
+    result + 5
+  }
 
+  lockedIn result = add(10,4);
 
-vibe(50+1, foo+1)
+  vibe(result)

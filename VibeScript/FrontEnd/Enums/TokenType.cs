@@ -15,6 +15,7 @@ namespace VibeScript.FrontEnd.Enums
         //Keywords
         Bet,
         LockedIn,
+        Cook, //this is for function creation
 
         //Grouping * Operators
         Equals,
