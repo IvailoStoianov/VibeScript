@@ -97,7 +97,7 @@ Remember: This is a learning project, not a production-ready language. Expect bu
 
 ## 📖 License
 
-[Add your chosen license here]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
