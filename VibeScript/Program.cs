@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using VibeScript.FrontEnd;
-using VibeScript.FrontEnd.Interfaces;
 using VibeScript.FrontEnd.Parser;
 using VibeScript.RunTime;
 using VibeScript.RunTime.Environment;
@@ -11,49 +10,50 @@ namespace VibeScript
 {
     internal class Program
     {
-        //TODO: Add strings
-        //TODO: Add If's
-        //TODO: Add loops
+        // Future enhancements:
+        // TODO: Add strings
+        // TODO: Add if statements
+        // TODO: Add loops
         static void Main(string[] args)
         {
-
             string content = File.ReadAllText("../../../ExampleSourceCode.txt");
 
+            // Initialize the interpreter components
             var parser = new Parser();   
-            // Create the global environment first
             var globalEnv = new RuntimeEnvironment().CreateGlobalEnv();
-            // Create program environment with global as parent
             var env = new RuntimeEnvironment(globalEnv);
             var interpreter = new Interpreter();
 
+            // Parse and interpret the program
             var program = parser.ProduceAST(content);
+            interpreter.Evaluate(program, env);
 
-            var result = interpreter.Evaluate(program, env);
-
-            JsonSerializerSettings settings = new JsonSerializerSettings
+            // Uncomment for interactive REPL mode
+            /*
+            while (true)
             {
-                Formatting = Formatting.Indented,
-                Converters = new List<JsonConverter> { new StringEnumConverter() }
-            };
+                Console.Write("> ");
+                string input = Console.ReadLine();
+                if (string.IsNullOrEmpty(input) || input == "exit")
+                {
+                    break;
+                }
 
-            //Console.WriteLine(JsonConvert.SerializeObject(result, settings));
-
-            //while (true)
-            //{
-            //    string input = Console.ReadLine();
-            //    if (input == string.Empty || input == "exit")
-            //    {
-            //        return;
-            //    }
-
-            //    var program = parser.ProduceAST(input);
-
-            //    var result = interpreter.Evaluate(program, env);
-
-            //    Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
-            //}
-
-
+                try
+                {
+                    var repl = parser.ProduceAST(input);
+                    var result = interpreter.Evaluate(repl, env);
+                    Console.WriteLine(JsonConvert.SerializeObject(result, new JsonSerializerSettings { 
+                        Formatting = Formatting.Indented,
+                        Converters = new List<JsonConverter> { new RuntimeValueJsonConverter() }
+                    }));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error: {ex.Message}");
+                }
+            }
+            */
         }
     }
 }

@@ -8,141 +8,128 @@ using VibeScript.FrontEnd.Interfaces;
 
 namespace VibeScript.FrontEnd
 {
+    /// <summary>
+    /// Responsible for converting source code into tokens.
+    /// </summary>
     public static class Lexer
     {
+        private static readonly Dictionary<string, TokenType> KeyWords = new()
+        {
+            { "bet", TokenType.Bet },
+            { "lockedIn", TokenType.LockedIn },
+            { "cook", TokenType.Cook }
+        };
+
+        private static readonly HashSet<char> Skippables = new() { ' ', '\n', '\t', '\r' };
+        private static readonly HashSet<char> SingleCharTokens = new() { 
+            '(', ')', '{', '}', '[', ']', '=', ';', ':', ',', '.' 
+        };
+        private static readonly HashSet<char> Operators = new() { '+', '-', '*', '/', '%' };
+
+        /// <summary>
+        /// Converts the source code into a list of tokens.
+        /// </summary>
+        /// <param name="sourceCode">The source code to tokenize.</param>
+        /// <returns>A list of tokens representing the source code.</returns>
         public static List<IToken> Tokenize(string sourceCode) 
         {
-            //Mapping for reserved key words
-            Dictionary<string, TokenType> keyWords = new Dictionary<string, TokenType>()
+            List<IToken> tokens = new();
+            
+            // Create a char array for better performance than Queue
+            char[] src = sourceCode.ToCharArray();
+            int position = 0;
+            int length = src.Length;
+
+            while (position < length)
             {
-                { ToLowerFirstLetter(TokenType.Bet.ToString()), TokenType.Bet },
-                { ToLowerFirstLetter(TokenType.LockedIn.ToString()), TokenType.LockedIn },
-                { ToLowerFirstLetter(TokenType.Cook.ToString()), TokenType.Cook },
-            };
+                char current = src[position];
 
-
-            List<IToken> tokens = new List<IToken>();
-            Queue<char> src = new Queue<char>(sourceCode);
-
-            //TODO: Improve so it doesnt leak memory
-            //Build each token until end of file
-            while (src.Count > 0)
-            {
-                if (src.Peek() == '(')
+                // Handle comments
+                if (position < length - 1 && current == '/' && src[position + 1] == '/')
                 {
-                    tokens.Add(createToken(src.Dequeue().ToString(), TokenType.OpenParen));
-                }
-                else if (src.Peek() == ')')
-                {
-                    tokens.Add(createToken(src.Dequeue().ToString(), TokenType.CloseParen));
-                }
-                else if (src.Peek() == '{')
-                {
-                    tokens.Add(createToken(src.Dequeue().ToString(), TokenType.OpenBrace));
-                }
-                else if (src.Peek() == '}')
-                {
-                    tokens.Add(createToken(src.Dequeue().ToString(), TokenType.CloseBrace));
-                }
-                else if (src.Peek() == '[')
-                {
-                    tokens.Add(createToken(src.Dequeue().ToString(), TokenType.OpenBracket));
-                }
-                else if (src.Peek() == ']')
-                {
-                    tokens.Add(createToken(src.Dequeue().ToString(), TokenType.CloseBracket));
-                }
-                else if (src.Peek() == '+' ||
-                    src.Peek() == '-' ||
-                    src.Peek() == '*' ||
-                    src.Peek() == '/' ||
-                    src.Peek() == '%')
-                {
-                    tokens.Add(createToken(src.Dequeue().ToString(), TokenType.BinaryOperator));
-                }
-                else if (src.Peek() == '=')
-                {
-                    tokens.Add(createToken(src.Dequeue().ToString(), TokenType.Equals));
-                }
-                else if (src.Peek() ==  ';')
-                {
-                    tokens.Add(createToken(src.Dequeue().ToString(), TokenType.Semicolon));
-                }
-                else if (src.Peek() == ':')
-                {
-                    tokens.Add(createToken(src.Dequeue().ToString(), TokenType.Colon));
-                }
-                else if (src.Peek() == ',')
-                {
-                    tokens.Add(createToken(src.Dequeue().ToString(), TokenType.Comma));
-                }
-                else if (src.Peek() == '.')
-                {
-                    tokens.Add(createToken(src.Dequeue().ToString(), TokenType.Dot));
-                }
-                else
-                {
-                    //Handle multicharacter tokens
-
-                    //Build number token
-                    if (char.IsDigit(src.Peek()))
+                    // Skip to the end of the line
+                    while (position < length && src[position] != '\n')
                     {
-                        StringBuilder numb = new StringBuilder();
-                        while (src.Count > 0 && char.IsDigit(src.Peek()))
-                        {
-                            numb.Append(src.Dequeue().ToString());
-                        }
-
-                        tokens.Add(createToken(numb.ToString(), TokenType.Number));
+                        position++;
                     }
-                    //Build identifier tokens
-                    else if (char.IsLetter(src.Peek()))
+                    continue;
+                }
+
+                // Process single character tokens
+                if (SingleCharTokens.Contains(current))
+                {
+                    TokenType type = current switch
                     {
-                        StringBuilder ident = new StringBuilder();
-                        while (src.Count > 0 && char.IsLetter(src.Peek()))
-                        {
-                            ident.Append(src.Dequeue().ToString());
-                        }
-                        TokenType reserved;
-                        // Check if the identifier exists in the keyword dictionary
-                        if (keyWords.TryGetValue(ident.ToString(), out reserved))
-                        {
-                            // If found, add it as a keyword token
-                            tokens.Add(createToken(ident.ToString(), reserved));
-                        }
-                        else
-                        {
-                            // If not found, treat it as an identifier
-                            tokens.Add(createToken(ident.ToString(), TokenType.Identifier));
-                        }
-
-
+                        '(' => TokenType.OpenParen,
+                        ')' => TokenType.CloseParen,
+                        '{' => TokenType.OpenBrace,
+                        '}' => TokenType.CloseBrace,
+                        '[' => TokenType.OpenBracket,
+                        ']' => TokenType.CloseBracket,
+                        '=' => TokenType.Equals,
+                        ';' => TokenType.Semicolon,
+                        ':' => TokenType.Colon,
+                        ',' => TokenType.Comma,
+                        '.' => TokenType.Dot,
+                        _ => throw new InvalidOperationException($"Unexpected character: {current}")
+                    };
+                    tokens.Add(CreateToken(current.ToString(), type));
+                    position++;
+                }
+                // Process operators
+                else if (Operators.Contains(current))
+                {
+                    tokens.Add(CreateToken(current.ToString(), TokenType.BinaryOperator));
+                    position++;
+                }
+                else if (char.IsDigit(current))
+                {
+                    // Build number token
+                    int start = position;
+                    while (position < length && char.IsDigit(src[position]))
+                    {
+                        position++;
                     }
-                    else if (isSkippable(src.Peek().ToString()))
+                    string number = sourceCode.Substring(start, position - start);
+                    tokens.Add(CreateToken(number, TokenType.Number));
+                }
+                else if (char.IsLetter(current))
+                {
+                    // Build identifier or keyword token
+                    int start = position;
+                    while (position < length && (char.IsLetterOrDigit(src[position]) || src[position] == '_'))
                     {
-                        src.Dequeue(); // Skip the character
+                        position++;
+                    }
+                    string identifier = sourceCode.Substring(start, position - start);
+                    
+                    if (KeyWords.TryGetValue(identifier, out TokenType reserved))
+                    {
+                        tokens.Add(CreateToken(identifier, reserved));
                     }
                     else
                     {
-                        Console.WriteLine($"Unrecgonized character found in source: {src.Peek()}");
-                        Environment.Exit(1);
+                        tokens.Add(CreateToken(identifier, TokenType.Identifier));
                     }
+                }
+                else if (Skippables.Contains(current))
+                {
+                    // Skip whitespace characters
+                    position++;
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Unrecognized character in source: {current}");
                 }
             }
 
-            tokens.Add(createToken("EndOfFile", TokenType.EOF));
+            tokens.Add(CreateToken("EndOfFile", TokenType.EOF));
             return tokens;
         }
-        private static Token createToken(string value, TokenType type)
+
+        private static Token CreateToken(string value, TokenType type)
         {
             return new Token() { Value = value, Type = type };
         }
-
-        //TODO: Could be improved
-        private static bool isSkippable(string str)
-        {
-            return str == " " || str == "\n" || str == "\t" || str == "\r";
-        }
-        private static string ToLowerFirstLetter(string str) => char.ToLower(str[0]) + str.Substring(1);
     }
 }

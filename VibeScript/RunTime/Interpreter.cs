@@ -26,39 +26,67 @@ namespace VibeScript.RunTime
         /// Evaluates a given AST node and returns the corresponding runtime value.
         /// </summary>
         /// <param name="astNode">The AST node to evaluate.</param>
+        /// <param name="env">The runtime environment for variable resolution.</param>
         /// <returns>The computed IRunTimeValue based on the AST node type.</returns>
         /// <exception cref="NotImplementedException">Thrown if the node type is not supported.</exception>
         public IRunTimeValue Evaluate(Statement astNode, RuntimeEnvironment env)
         {
-            return astNode.Kind switch
+            try
             {
-                NodeType.NumericLiteral => new NumberValue(((NumericLiteral)astNode).Value),
-                NodeType.Identifier => EvaluateIdentifier((Identifier)astNode, env),
-                NodeType.ObjectLiteral => EvaluateObjectExpr((ObjectLiteral)astNode, env),
-                NodeType.CallExpr => EvaluateCallExpr((CallExpr)astNode, env),
-                NodeType.BinaryExpr => EvaluateBinaryExpr((BinaryExpr)astNode, env),
-                NodeType.AssignmentExpr => EvaluateAssignmentExpr((AssignmentExpr)astNode, env),
-                NodeType.Program => EvaluateProgram((ProgramNode)astNode, env),
-                NodeType.VarDeclaration => EvaluateVarDeclaration((VarDeclaration)astNode, env),
-                NodeType.FunctionDeclaration => EvaluateFunctionDeclaration((FunctionDeclaration)astNode, env),
-                NodeType.MemberExpr => EvaluateMemberExpr((MemberExpr)astNode, env),
-                _ => throw new NotImplementedException($"This AST Node has not yet been setup for interpretation: {JsonConvert.SerializeObject(astNode)}")
-            };
+                return astNode.Kind switch
+                {
+                    NodeType.NumericLiteral => new NumberValue(((NumericLiteral)astNode).Value),
+                    NodeType.Identifier => EvaluateIdentifier((Identifier)astNode, env),
+                    NodeType.ObjectLiteral => EvaluateObjectExpr((ObjectLiteral)astNode, env),
+                    NodeType.CallExpr => EvaluateCallExpr((CallExpr)astNode, env),
+                    NodeType.BinaryExpr => EvaluateBinaryExpr((BinaryExpr)astNode, env),
+                    NodeType.AssignmentExpr => EvaluateAssignmentExpr((AssignmentExpr)astNode, env),
+                    NodeType.Program => EvaluateProgram((ProgramNode)astNode, env),
+                    NodeType.VarDeclaration => EvaluateVarDeclaration((VarDeclaration)astNode, env),
+                    NodeType.FunctionDeclaration => EvaluateFunctionDeclaration((FunctionDeclaration)astNode, env),
+                    NodeType.MemberExpr => EvaluateMemberExpr((MemberExpr)astNode, env),
+                    _ => throw new NotImplementedException($"This AST Node has not yet been setup for interpretation: {astNode.Kind}")
+                };
+            }
+            catch (Exception ex) when (
+                ex is not NotImplementedException && 
+                ex is not InvalidOperationException && 
+                ex is not DivideByZeroException)
+            {
+                throw new RuntimeException($"Runtime error evaluating {astNode.Kind}: {ex.Message}", ex);
+            }
         }
 
+        /// <summary>
+        /// Evaluates a function declaration statement.
+        /// </summary>
         private IRunTimeValue EvaluateFunctionDeclaration(FunctionDeclaration functionDeclaration, RuntimeEnvironment env)
         {
-            FuncValue fn = new FuncValue(functionDeclaration.Name,functionDeclaration.Parameters,env,functionDeclaration.Body);
+            FuncValue fn = new(
+                functionDeclaration.Name,
+                functionDeclaration.Parameters,
+                env,
+                functionDeclaration.Body
+            );
 
             return env.DeclareVar(functionDeclaration.Name, fn, true);
         }
 
+        /// <summary>
+        /// Evaluates a variable declaration statement.
+        /// </summary>
         private IRunTimeValue EvaluateVarDeclaration(VarDeclaration varDeclaration, RuntimeEnvironment env)
         {
-            IRunTimeValue value = varDeclaration.Value != null ? Evaluate(varDeclaration.Value, env) : new NullValue();
+            IRunTimeValue value = varDeclaration.Value != null 
+                ? Evaluate(varDeclaration.Value, env) 
+                : new NullValue();
+                
             return env.DeclareVar(varDeclaration.IndentifierName, value, varDeclaration.IsLockedIn);
         }
 
+        /// <summary>
+        /// Evaluates an identifier to retrieve its value from the environment.
+        /// </summary>
         private IRunTimeValue EvaluateIdentifier(Identifier ident, RuntimeEnvironment env)
         {
             return env.LookUpVar(ident.Symbol);
@@ -72,11 +100,14 @@ namespace VibeScript.RunTime
             var lhs = Evaluate(binop.Left, env);
             var rhs = Evaluate(binop.Right, env);
 
-            return (lhs.Type, rhs.Type) switch
+            if (lhs.Type != ValueType.Number || rhs.Type != ValueType.Number)
             {
-                (ValueType.Number, ValueType.Number) => EvaluateNumericBinaryExpr((NumberValue)lhs, (NumberValue)rhs, binop.Operator),
-                _ => new NullValue() // Error handling for unsupported types.
-            };
+                throw new InvalidOperationException(
+                    $"Binary operation '{binop.Operator}' can only be applied to numbers, " +
+                    $"got '{lhs.Type}' and '{rhs.Type}'");
+            }
+
+            return EvaluateNumericBinaryExpr((NumberValue)lhs, (NumberValue)rhs, binop.Operator);
         }
 
         /// <summary>
@@ -86,15 +117,21 @@ namespace VibeScript.RunTime
         /// <exception cref="NotImplementedException">Thrown for unsupported operators.</exception>
         private NumberValue EvaluateNumericBinaryExpr(NumberValue lhs, NumberValue rhs, string operatorValue)
         {
-            return new NumberValue(operatorValue switch
+            double result = operatorValue switch
             {
                 "+" => lhs.Value + rhs.Value,
                 "-" => lhs.Value - rhs.Value,
                 "*" => lhs.Value * rhs.Value,
-                "/" => rhs.Value != 0 ? lhs.Value / rhs.Value : throw new DivideByZeroException("Cannot divide by zero."),
-                "%" => rhs.Value != 0 ? lhs.Value % rhs.Value : throw new DivideByZeroException("Cannot mod by zero."),
+                "/" => rhs.Value != 0 
+                    ? lhs.Value / rhs.Value 
+                    : throw new DivideByZeroException("Cannot divide by zero."),
+                "%" => rhs.Value != 0 
+                    ? lhs.Value % rhs.Value 
+                    : throw new DivideByZeroException("Cannot mod by zero."),
                 _ => throw new NotImplementedException($"Operator '{operatorValue}' is not supported.")
-            });
+            };
+            
+            return new NumberValue((float)result);
         }
 
         /// <summary>
@@ -112,77 +149,103 @@ namespace VibeScript.RunTime
             return lastEvaluated;
         }
 
+        /// <summary>
+        /// Evaluates an assignment expression.
+        /// </summary>
         private IRunTimeValue EvaluateAssignmentExpr(AssignmentExpr node, RuntimeEnvironment env) 
         {
-            if(node.Assigne.Kind != NodeType.Identifier)
+            if (node.Assigne.Kind != NodeType.Identifier)
             {
-                throw new InvalidOperationException($"Invalid LHS inside assigment expression {JsonConvert.SerializeObject(node, Formatting.Indented)}");
+                throw new InvalidOperationException(
+                    $"Invalid left-hand side in assignment expression: expected identifier, got {node.Assigne.Kind}");
             }
+            
             string varName = ((Identifier)node.Assigne).Symbol;
             return env.AssignVar(varName, Evaluate(node.Value, env));
         }
 
+        /// <summary>
+        /// Evaluates an object literal expression.
+        /// </summary>
         private IRunTimeValue EvaluateObjectExpr(ObjectLiteral obj, RuntimeEnvironment env)
         {
-            ObjectValue crrObject = new ObjectValue( new Dictionary<string, IRunTimeValue>());
+            ObjectValue result = new(new Dictionary<string, IRunTimeValue>());
+            
             foreach (Property prop in obj.Properties) 
             {
-                // { foo: foo }
-                IRunTimeValue runtimeVal = prop.Value == null ? env.LookUpVar(prop.Key) : Evaluate(prop.Value, env);
-                crrObject.Properties.Add(prop.Key, runtimeVal);
+                // Handle shorthand properties like { foo } which is equivalent to { foo: foo }
+                IRunTimeValue runtimeVal = prop.Value == null 
+                    ? env.LookUpVar(prop.Key) 
+                    : Evaluate(prop.Value, env);
+                    
+                result.Properties.Add(prop.Key, runtimeVal);
             }
-            return crrObject;
+            
+            return result;
         }
+
+        /// <summary>
+        /// Evaluates a function call expression.
+        /// </summary>
         private IRunTimeValue EvaluateCallExpr(CallExpr expr, RuntimeEnvironment env)
         {
             // Evaluate the arguments
             RunTimeValue[] args = expr.Arguments
-                                    .Select(arg => (RunTimeValue)Evaluate(arg, env))
-                                    .ToArray();
+                .Select(arg => (RunTimeValue)Evaluate(arg, env))
+                .ToArray();
 
             // Evaluate the caller (function) of the expression
             IRunTimeValue fn = Evaluate(expr.Caller, env);
 
-            // Check if the function is of type 'NativeFunc'
+            // Handle native functions (built-ins)
             if (fn is NativeFuncValue nativeFn)
             {
-                // Call the native function with the evaluated arguments
                 return nativeFn.Call(args, env);
             }
-            else if(fn is FuncValue func)
+            
+            // Handle user-defined functions
+            if (fn is FuncValue func)
             {
-                RuntimeEnvironment scope = new RuntimeEnvironment(func.Environment);
+                // Create a new scope for the function execution
+                RuntimeEnvironment scope = new(func.Environment);
 
+                // Bind parameters to arguments
                 for (int i = 0; i < func.Parameters.Count; i++)
                 {
-                    //TODO: Check the bounds here.
-                    //Verify arity of function
-                    string varName = func.Parameters[i];
-                    scope.DeclareVar(varName, args[i], false);
+                    // TODO: Add arity checking (function parameter count vs argument count)
+                    if (i < args.Length)
+                    {
+                        string varName = func.Parameters[i];
+                        scope.DeclareVar(varName, args[i], false);
+                    }
                 }
+                
+                // Evaluate the function body line by line
                 IRunTimeValue result = new NullValue();
-                //Evaluate the function body line by line
                 foreach (Statement stmt in func.Body) 
                 {
                     result = Evaluate(stmt, scope);
                 }
-                //this makes it so the function will return the last evaluated statement
+                
+                // Return the result of evaluating the last statement
                 return result;
             }
-            else
-            {
-                // If it's not a function, throw an exception
-                throw new InvalidOperationException($"Cannot call a value that's not a function: {JsonConvert.SerializeObject(fn, Formatting.Indented)}.");
-            }
+            
+            throw new InvalidOperationException(
+                $"Cannot call a non-function value of type '{fn.Type}'");
         }
 
+        /// <summary>
+        /// Evaluates a member expression (object property access).
+        /// </summary>
         private IRunTimeValue EvaluateMemberExpr(MemberExpr expr, RuntimeEnvironment env)
         {
             IRunTimeValue obj = Evaluate(expr.Object, env);
             
             if (obj is not ObjectValue objValue)
             {
-                throw new InvalidOperationException($"Cannot access properties of non-object value: {JsonConvert.SerializeObject(obj, Formatting.Indented)}");
+                throw new InvalidOperationException(
+                    $"Cannot access properties of a non-object value of type '{obj.Type}'");
             }
 
             // Handle computed properties like obj[expr] vs dot notation obj.prop
@@ -193,7 +256,7 @@ namespace VibeScript.RunTime
                 IRunTimeValue computed = Evaluate(expr.Property, env);
                 if (computed is not RunTimeValue val || string.IsNullOrEmpty(val.ToString()))
                 {
-                    throw new InvalidOperationException($"Invalid property key: {JsonConvert.SerializeObject(computed, Formatting.Indented)}");
+                    throw new InvalidOperationException($"Invalid property key: {computed}");
                 }
                 propertyName = val.ToString();
             }
@@ -202,7 +265,8 @@ namespace VibeScript.RunTime
                 // For dot notation, property should be an identifier
                 if (expr.Property is not Identifier ident)
                 {
-                    throw new InvalidOperationException("Non-computed member expression property must be an identifier");
+                    throw new InvalidOperationException(
+                        "Non-computed member expression property must be an identifier");
                 }
                 propertyName = ident.Symbol;
             }
@@ -215,5 +279,14 @@ namespace VibeScript.RunTime
 
             return value;
         }
+    }
+
+    /// <summary>
+    /// Exception thrown for runtime errors during interpretation.
+    /// </summary>
+    public class RuntimeException : Exception
+    {
+        public RuntimeException(string message) : base(message) { }
+        public RuntimeException(string message, Exception innerException) : base(message, innerException) { }
     }
 }
