@@ -1,6 +1,8 @@
 ﻿using VibeScript.RunTime.Values;
 using VibeScript.RunTime.Values.Interfaces;
 using ValueType = VibeScript.RunTime.Values.ValueType;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace VibeScript.RunTime.Environment
 {
@@ -10,6 +12,12 @@ namespace VibeScript.RunTime.Environment
         private Dictionary<string, IRunTimeValue> _variables;
         //Collection of all constants
         private HashSet<string> _lockedIns;
+        
+        private static readonly JsonSerializerSettings _jsonSettings = new JsonSerializerSettings
+        {
+            Formatting = Formatting.Indented,
+            Converters = new List<JsonConverter> { new RuntimeValueJsonConverter() }
+        };
         
         public RuntimeEnvironment(RuntimeEnvironment? parent = null) 
         {

@@ -199,27 +199,16 @@ namespace VibeScript.FrontEnd.Parser
         /// </summary>
         private Expression ParseAdditiveExpr()
         {
-            // Parse the first primary expression (left operand)
             Expression left = this.ParseMultiplicativeExpr();
 
-            // Continue parsing while the next token is '+' or '-'
-            while (this.AtZero().Value == "+"
-                || this.AtZero().Value == "-")
+            while (this.AtZero().Type == TokenType.BinaryOperator && 
+                  (this.AtZero().Value == "+" || this.AtZero().Value == "-"))
             {
-                // Store the operator ('+' or '-')
-                string operatorValue = this.Next().Value;
-
-                // Parse the next primary expression (right operand)
+                string operator_ = this.Next().Value;
                 Expression right = this.ParseMultiplicativeExpr();
-
-                // Create a binary expression combining the left and right operands
-                BinaryExpr binop = new BinaryExpr(left, operatorValue, right);
-
-                // Update 'left' to maintain left-associativity
-                left = binop;
+                left = new BinaryExpr(left, operator_, right);
             }
 
-            // Return the fully parsed expression
             return left;
         }
 
@@ -227,15 +216,12 @@ namespace VibeScript.FrontEnd.Parser
         {
             Expression left = this.ParseCallMemberExpr();
 
-            while (this.AtZero().Value == "/"
-                || this.AtZero().Value == "*"
-                || this.AtZero().Value == "%")
+            while (this.AtZero().Type == TokenType.BinaryOperator && 
+                  (this.AtZero().Value == "*" || this.AtZero().Value == "/" || this.AtZero().Value == "%"))
             {
-                string operatorValue = this.Next().Value;
+                string operator_ = this.Next().Value;
                 Expression right = this.ParseCallMemberExpr();
-
-                BinaryExpr binop = new BinaryExpr(left, operatorValue, right);
-                left = binop;
+                left = new BinaryExpr(left, operator_, right);
             }
 
             return left;

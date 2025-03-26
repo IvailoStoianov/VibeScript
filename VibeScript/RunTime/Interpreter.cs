@@ -16,6 +16,12 @@ namespace VibeScript.RunTime
     /// </summary>
     public class Interpreter
     {
+        private static readonly JsonSerializerSettings _jsonSettings = new JsonSerializerSettings
+        {
+            Formatting = Formatting.Indented,
+            Converters = new List<JsonConverter> { new RuntimeValueJsonConverter() }
+        };
+
         /// <summary>
         /// Evaluates a given AST node and returns the corresponding runtime value.
         /// </summary>
@@ -24,12 +30,6 @@ namespace VibeScript.RunTime
         /// <exception cref="NotImplementedException">Thrown if the node type is not supported.</exception>
         public IRunTimeValue Evaluate(Statement astNode, RuntimeEnvironment env)
         {
-            JsonSerializerSettings settings = new JsonSerializerSettings
-            {
-                Formatting = Formatting.Indented,
-                Converters = new List<JsonConverter> { new StringEnumConverter() }
-            };
-
             return astNode.Kind switch
             {
                 NodeType.NumericLiteral => new NumberValue(((NumericLiteral)astNode).Value),
@@ -41,7 +41,8 @@ namespace VibeScript.RunTime
                 NodeType.Program => EvaluateProgram((ProgramNode)astNode, env),
                 NodeType.VarDeclaration => EvaluateVarDeclaration((VarDeclaration)astNode, env),
                 NodeType.FunctionDeclaration => EvaluateFunctionDeclaration((FunctionDeclaration)astNode, env),
-                _ => throw new NotImplementedException($"This AST Node has not yet been setup for interpretation: {JsonConvert.SerializeObject(astNode, settings)}")
+                NodeType.MemberExpr => EvaluateMemberExpr((MemberExpr)astNode, env),
+                _ => throw new NotImplementedException($"This AST Node has not yet been setup for interpretation: {JsonConvert.SerializeObject(astNode)}")
             };
         }
 
@@ -60,8 +61,7 @@ namespace VibeScript.RunTime
 
         private IRunTimeValue EvaluateIdentifier(Identifier ident, RuntimeEnvironment env)
         {
-            var val = env.LookUpVar(ident.Symbol);
-            return val;
+            return env.LookUpVar(ident.Symbol);
         }
 
         /// <summary>
@@ -135,9 +135,9 @@ namespace VibeScript.RunTime
         }
         private IRunTimeValue EvaluateCallExpr(CallExpr expr, RuntimeEnvironment env)
         {
-            // Evaluate the arguments and convert the list to a RunTimeValue array
+            // Evaluate the arguments
             RunTimeValue[] args = expr.Arguments
-                                    .Select(arg => (RunTimeValue)Evaluate(arg, env)) // Cast each evaluated result to RunTimeValue
+                                    .Select(arg => (RunTimeValue)Evaluate(arg, env))
                                     .ToArray();
 
             // Evaluate the caller (function) of the expression
@@ -158,7 +158,7 @@ namespace VibeScript.RunTime
                     //TODO: Check the bounds here.
                     //Verify arity of function
                     string varName = func.Parameters[i];
-                    scope.DeclareVar(varName,args[i], false);
+                    scope.DeclareVar(varName, args[i], false);
                 }
                 IRunTimeValue result = new NullValue();
                 //Evaluate the function body line by line
@@ -168,13 +168,52 @@ namespace VibeScript.RunTime
                 }
                 //this makes it so the function will return the last evaluated statement
                 return result;
-
             }
             else
             {
                 // If it's not a function, throw an exception
                 throw new InvalidOperationException($"Cannot call a value that's not a function: {JsonConvert.SerializeObject(fn, Formatting.Indented)}.");
             }
+        }
+
+        private IRunTimeValue EvaluateMemberExpr(MemberExpr expr, RuntimeEnvironment env)
+        {
+            IRunTimeValue obj = Evaluate(expr.Object, env);
+            
+            if (obj is not ObjectValue objValue)
+            {
+                throw new InvalidOperationException($"Cannot access properties of non-object value: {JsonConvert.SerializeObject(obj, Formatting.Indented)}");
+            }
+
+            // Handle computed properties like obj[expr] vs dot notation obj.prop
+            string propertyName;
+            if (expr.IsComputed)
+            {
+                // For computed properties, evaluate the property expression
+                IRunTimeValue computed = Evaluate(expr.Property, env);
+                if (computed is not RunTimeValue val || string.IsNullOrEmpty(val.ToString()))
+                {
+                    throw new InvalidOperationException($"Invalid property key: {JsonConvert.SerializeObject(computed, Formatting.Indented)}");
+                }
+                propertyName = val.ToString();
+            }
+            else
+            {
+                // For dot notation, property should be an identifier
+                if (expr.Property is not Identifier ident)
+                {
+                    throw new InvalidOperationException("Non-computed member expression property must be an identifier");
+                }
+                propertyName = ident.Symbol;
+            }
+
+            // Try to get the property value
+            if (!objValue.Properties.TryGetValue(propertyName, out IRunTimeValue value))
+            {
+                return new NullValue(); // Property doesn't exist
+            }
+
+            return value;
         }
     }
 }

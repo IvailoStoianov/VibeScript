@@ -11,17 +11,20 @@ namespace VibeScript
 {
     internal class Program
     {
+        //TODO: Add strings
+        //TODO: Add If's
+        //TODO: Add loops
         static void Main(string[] args)
         {
 
             string content = File.ReadAllText("../../../ExampleSourceCode.txt");
 
             var parser = new Parser();   
-            var env = new RuntimeEnvironment();
+            // Create the global environment first
+            var globalEnv = new RuntimeEnvironment().CreateGlobalEnv();
+            // Create program environment with global as parent
+            var env = new RuntimeEnvironment(globalEnv);
             var interpreter = new Interpreter();
-
-            //Create Default Global Environment
-            env = env.CreateGlobalEnv();
 
             var program = parser.ProduceAST(content);
 
